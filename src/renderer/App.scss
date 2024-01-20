@@ -1,0 +1,96 @@
+/*
+ * @NOTE: Prepend a `~` to css file paths that are in your node_modules
+ *        See https://github.com/webpack-contrib/sass-loader#imports
+ */
+
+@import 'variables';
+body {
+  position: relative;
+  height: 100vh;
+
+  font-family: sans-serif;
+  overflow-y: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0px;
+}
+
+button {
+  padding: $button-padding;
+  border-radius: $border-radius;
+  border: none;
+  appearance: none;
+  font-size: 1.3rem;
+  background-color: $button-bg;
+  color: $button-color;
+  transition: all ease-in 0.1s;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:hover:disabled {
+  transform: none;
+  opacity: 0.5;
+}
+.animated-button {
+  cursor: pointer;
+}
+
+button:hover,
+.animated-button:hover {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+button:active,
+.animated-button:active {
+  transform: scale(0.9);
+}
+
+li {
+  list-style: none;
+}
+
+a {
+  text-decoration: none;
+  height: fit-content;
+  width: fit-content;
+  margin: 10px;
+}
+
+a:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+
+.error-message {
+  color: $error-msg-color;
+  font-size: 0.8rem;
+  margin: 0;
+  padding: 0;
+  margin-top: 5px;
+}
+
+.hint-text {
+  font-size: 14px;
+  color: #8e8e93;
+}
+
+input {
+  &::placeholder {
+    color: $placeholder-color;
+  }
+  &:focus {
+    outline: none;
+  }
+}
+
+.w-100 {
+  width: 100%;
+}

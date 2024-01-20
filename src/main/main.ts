@@ -1,5 +1,8 @@
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
+import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
+import log from 'electron-log';
+import { autoUpdater } from 'electron-updater';
 /**
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
@@ -9,10 +12,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
-import MenuBuilder from './menu';
+
 import { resolveHtmlPath } from './util';
 
 class AppUpdater {
@@ -71,9 +71,9 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
+    width: 1440,
     height: 728,
-    icon: getAssetPath('icon.png'),
+    icon: getAssetPath('vama.png'),
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
@@ -98,9 +98,7 @@ const createWindow = async () => {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
-
+  Menu.setApplicationMenu(null);
   // Open urls in the user's browser
   mainWindow.webContents.setWindowOpenHandler((edata) => {
     shell.openExternal(edata.url);
