@@ -1,8 +1,8 @@
-import { atom } from 'recoil';
+import { atom, useRecoilCallback } from 'recoil';
 
 export const userPhoneNumber$ = atom({
   key: 'userPhoneNumber',
-  default: '12816668889',
+  default: '',
 });
 
 export const userFirstName$ = atom({
@@ -15,6 +15,50 @@ export const userLastName$ = atom({
   default: '',
 });
 
+export const userAuthDetails$ = atom({
+  key: 'userAuthDetails',
+  default: {
+    token: '',
+    accountId: '',
+    tokenExpiresAt: '',
+  },
+});
+
+export const activeConnectionStatus$ = atom({
+  key: 'activeConnectionStatus',
+  default: 'disconnected',
+});
+
+export const connectionStatusUpdater = () => {
+  return useRecoilCallback(({ set }) => async (newConnectionStatus: string) => {
+    set(activeConnectionStatus$, newConnectionStatus);
+  });
+};
+
+export const getMockContacts = (accountId: string) => {
+  if (accountId === 'account-id-+12816668889') {
+    return [
+      {
+        id: 'account-id-+12816668888',
+        firstName: 'Spongebob',
+        lastName: 'Squarepants',
+        userName: 'sponge.square',
+        avatar: '',
+      },
+    ];
+  } else {
+    return [
+      {
+        id: 'account-id-+12816668889',
+        firstName: 'Krabs',
+        lastName: 'Mr',
+        userName: 'mr.krabs',
+        avatar: '',
+      },
+    ];
+  }
+};
+
 export const mockContactList = [
   {
     id: '0001',
@@ -24,7 +68,7 @@ export const mockContactList = [
     avatar: '',
   },
   {
-    id: '0002',
+    id: 'account-id-+12816668888',
     firstName: 'Iron',
     lastName: 'Man',
     userName: 'JohnDoe',
@@ -46,15 +90,34 @@ export const mockContactList = [
   },
 ];
 
-export const contactList$ = atom({
+interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  userName: string;
+  avatar: string;
+}
+
+export const contactList$ = atom<Contact[]>({
   key: 'contactList',
-  default: mockContactList,
+  default: [],
 });
 
 export const selectedContactIndex$ = atom({
   key: 'selectedContactIndex',
-  default: 1,
+  default: -1,
 });
+
+export const loadingStatus$ = atom({
+  key: 'loadingStatus',
+  default: false,
+});
+
+export const changeLoadingState = () => {
+  return useRecoilCallback(({ set }) => async (loadingStatus: boolean) => {
+    set(loadingStatus$, loadingStatus);
+  });
+};
 
 const mockChatHistory = [
   {
@@ -199,7 +262,47 @@ const mockChatHistory = [
   },
 ];
 
-export const activeChatHistory$ = atom({
+export interface ChatHistoryItem {
+  id: string;
+  sender: string;
+  message: string;
+  timeStamp: string;
+}
+
+export const activeChatHistory$ = atom<ChatHistoryItem[]>({
   key: 'activeChatHistory',
-  default: mockChatHistory,
+  default: [],
 });
+
+export const addItemsToActiveChatHistory = () => {
+  return useRecoilCallback(
+    ({ snapshot, set }) =>
+      async (newChatHistory: ChatHistoryItem[]) => {
+        const loadable = snapshot.getLoadable(activeChatHistory$);
+        if (loadable.state === 'hasValue') {
+          const activeChatHistory = loadable.contents;
+
+          const combinedChatHistory = [...activeChatHistory, ...newChatHistory];
+          // replace with latest values from the server even for existing items
+          const uniqueChatHistory = Object.values(
+            combinedChatHistory.reduce(
+              (acc, item) => {
+                acc[item.id] = item;
+                return acc;
+              },
+              {} as Record<string, ChatHistoryItem>,
+            ),
+          );
+
+          set(
+            activeChatHistory$,
+            uniqueChatHistory.sort(
+              (d1: any, d2: any) =>
+                new Date(d1.timeStamp).getTime() -
+                new Date(d2.timeStamp).getTime(),
+            ),
+          );
+        }
+      },
+  );
+};

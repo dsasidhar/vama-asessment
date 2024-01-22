@@ -19,3 +19,7 @@ To package apps for the local platform:
 ```bash
 npm run package
 ```
+
+### Credits
+
+Initialized with the boilerplate [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate)

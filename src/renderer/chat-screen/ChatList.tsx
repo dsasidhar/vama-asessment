@@ -2,10 +2,15 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 import defaultProfileAvatar from '../../../assets/avatar.png';
 import newChatIcon from '../../../assets/new_chat.png';
-import { contactList$, selectedContactIndex$ } from '../appState';
+import {
+  activeChatHistory$,
+  contactList$,
+  selectedContactIndex$,
+} from '../appState';
 
 export default function ChatList() {
   const contactList = useRecoilValue(contactList$);
+  const activeChatHistory = useRecoilValue(activeChatHistory$);
   const [selectedContactIndex, setSelectedContact] = useRecoilState(
     selectedContactIndex$,
   );
@@ -38,12 +43,25 @@ export default function ChatList() {
                 <span className="chat-info-header-name">
                   {contact.firstName} {contact.lastName}
                 </span>
-                <span className="chat-info-header-time">12:00 AM</span>
+                <span className="chat-info-header-time">
+                  {activeChatHistory.length > 0
+                    ? new Date(
+                        activeChatHistory[
+                          activeChatHistory.length - 1
+                        ].timeStamp,
+                      ).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      })
+                    : ''}
+                </span>
               </div>
               <div className="chat-info-body">
                 <div className="chat-info-body-message">
-                  Contact me as soon as possible you get this message, I am
-                  waiting
+                  {activeChatHistory.length > 0
+                    ? activeChatHistory[activeChatHistory.length - 1].message
+                    : ''}
                 </div>
               </div>
             </div>

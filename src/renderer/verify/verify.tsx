@@ -1,60 +1,90 @@
+import log from 'electron-log/renderer';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-import { userPhoneNumber$ } from '../appState';
+import signIn from '../api';
+import { makeNoAPICalls } from '../apiConstants';
+import {
+  addItemsToActiveChatHistory,
+  contactList$,
+  getMockContacts,
+  userAuthDetails$,
+  userPhoneNumber$,
+} from '../appState';
 import SignUpBanner from '../SignUpBanner';
+import SocketManager from '../SocketManager';
+import enforceErrorType from '../utils/errorUtils';
+import formatPhoneNumberForDisplay from '../utils/phoneUtils';
 
-function formatPhoneNumber(phoneNumber: string) {
-  const cleaned = phoneNumber.replace(/\D/g, '');
-  const match = cleaned.match(/^(\d{1})(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    return `+${match[1]} ${match[2]}-${match[3]}-${match[4]}`;
-  }
-  return null;
-}
-const noAPICalls = true;
 export default function Verify() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const phoneNumber = useRecoilValue(userPhoneNumber$);
+  const setUserAuthDetails = useSetRecoilState(userAuthDetails$);
+  const setContactList = useSetRecoilState(contactList$);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const makeAPICall = async () => {
-    if (noAPICalls) {
+
+  const signInWithAPI = async () => {
+    if (makeNoAPICalls) {
       navigate('/user-details');
       return;
     }
-    const response = await fetch(`https://vapi-dev.vama.com/signin_sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone_number: `+${phoneNumber}`,
-        country_code: 'US',
-        verify_code: code,
-        app_check_token: 'app_check_token',
-      }),
-    });
-    const data = await response.json();
-    if (data.error) {
-      setError(data.error.message);
-    } else {
+    setLoading(true);
+    try {
+      const response = await signIn(phoneNumber, code);
+      log.info('Sign in data:', response);
+      if (response.error) {
+        setError(response.error.message);
+        throw new Error(response.error.message);
+      }
+      if (response.data === undefined) {
+        setError('Invalid code');
+        throw new Error('Invalid code');
+      }
+      const {
+        token,
+        account_id: accountId,
+        token_expires_at: tokenExpiresAt,
+      } = response.data;
+      if (token === undefined) {
+        setError('Invalid code');
+        throw new Error('Invalid code');
+      }
       setError('');
+      setUserAuthDetails({
+        token,
+        accountId,
+        tokenExpiresAt,
+      });
+
+      setContactList(getMockContacts(accountId));
+      navigate('/user-details');
+    } catch (inputError) {
+      const err = enforceErrorType(inputError);
+      log.error('Fetch error:', err);
+      setError(
+        'message' in err ? (err.message as string) : 'Something went wrong',
+      );
+    } finally {
+      setLoading(false);
     }
-    console.log('api response', data);
   };
+
+  // input validation
   useEffect(() => {
-    if (code.length > 0 && code.length === 4 && !Number.isNaN(Number(code))) {
+    if (code.length > 0 && code.length === 5 && !Number.isNaN(Number(code))) {
       setError('');
     } else {
       setError('Please enter a valid verification code');
     }
   }, [code]);
+
   return (
     <div className="signup-container">
       <SignUpBanner />
-      <p> {formatPhoneNumber(phoneNumber)}</p>
+      <p> {formatPhoneNumberForDisplay(phoneNumber)}</p>
       <p className="hint-text">We have sent you an SMS with the code</p>
 
       <input
@@ -66,11 +96,11 @@ export default function Verify() {
       <p className="error-message">{error} </p>
       <button
         disabled={error !== ''}
-        onClick={makeAPICall}
+        onClick={signInWithAPI}
         className="next"
         type="button"
       >
-        Next
+        {loading ? 'Loading...' : 'Next'}
       </button>
     </div>
   );

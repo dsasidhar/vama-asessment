@@ -14,6 +14,7 @@ module.exports = {
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': 'error',
   },
+  exclude: ['test', 'release/build', 'release/app/dist', '.erb/dll', 'api'],
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',

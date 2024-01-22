@@ -1,8 +1,8 @@
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
 import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron';
-import log from 'electron-log';
-import { autoUpdater } from 'electron-updater';
+import log from 'electron-log/main';
+import Store from 'electron-store';
 /**
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
@@ -15,20 +15,27 @@ import path from 'path';
 
 import { resolveHtmlPath } from './util';
 
-class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
-
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.on('ipc-example', async (event, arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-  console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+log.initialize();
+
+const store = new Store();
+
+const truncatedData = (obj: any) => {
+  if (Array.isArray(obj)) {
+    return obj.slice(0, 5);
+  }
+  return obj;
+};
+
+ipcMain.handle('store-data', (event, key, data) => {
+  log.log('Storing data for key', key, truncatedData(data));
+  store.set(key, data);
+});
+
+ipcMain.handle('get-data', (event, key) => {
+  log.log('Getting data for key', key, truncatedData(store.get(key)));
+  return store.get(key);
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -69,11 +76,13 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  log.log('Setting icon...', getAssetPath('icon.png'));
+
   mainWindow = new BrowserWindow({
     show: false,
     width: 1440,
     height: 728,
-    icon: getAssetPath('vama.png'),
+    icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
@@ -104,10 +113,6 @@ const createWindow = async () => {
     shell.openExternal(edata.url);
     return { action: 'deny' };
   });
-
-  // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
-  new AppUpdater();
 };
 
 /**
